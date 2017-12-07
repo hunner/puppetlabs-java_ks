@@ -5,6 +5,43 @@ require 'puppet_blacksmith/rake_tasks' if Bundler.rubygems.find_name('puppet-bla
 PuppetLint.configuration.fail_on_warnings = true
 PuppetLint.configuration.send('relative')
 
+begin
+  require 'github_changelog_generator/task'
+  GitHubChangelogGenerator::RakeTask.new :changelog do |config|
+    config.future_release = YAML.load_file('metadata.json')['version']
+    config.since_tag = "1.3.0"
+    config.header = "# Change log\n\nAll notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org)."
+    config.add_pr_wo_labels = false
+    config.add_issues_wo_labels = false
+    config.configure_sections = {
+      "Changed" => {
+        "prefix" => "### Changed",
+        "labels" => ["backwards-incompatible"],
+      },
+      "Added" => {
+        "prefix" => "### Added",
+        "labels" => ["feature"],
+      },
+      "Fixed" => {
+        "prefix" => "### Fixed",
+        "labels" => ["bugfix"],
+      },
+    }
+    config.user = 'puppetlabs'
+    config.project = 'puppetlabs-java_ks'
+  end
+rescue Errno::ENOENT
+  desc 'Could not find file metadata.json'
+  task :changelog do
+    raise 'Could not find file metadata.json'
+  end
+rescue LoadError
+  desc 'Install github_changelog_generator to get access to automatic changelog generation'
+  task :changelog do
+    raise 'Install github_changelog_generator to get access to automatic changelog generation'
+  end
+end
+
 desc 'Generate pooler nodesets'
 task :gen_nodeset do
   require 'beaker-hostgenerator'
